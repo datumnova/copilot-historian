@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Copilot Historian — your session history, explored</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23b11f4b'%20stroke-width='2.2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M3.5%2012a8.5%208.5%200%201%200%202.2-5.7'/%3E%3Cpath%20d='M3.5%204v4.5H8'/%3E%3Cpath%20d='M12%207.5V12l3.2%202'/%3E%3C/svg%3E">
+<script>
+  (() => {
+    const param = new URLSearchParams(window.location.search).get("scoutTheme");
+    const theme =
+      param || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    document.documentElement.setAttribute("data-theme", theme);
+  })();
+</script>
+<style>
+:root {
+  color-scheme: light;
+  --cp-bg: #f7f4ef;
+  --cp-bg-elevated: #fcfbf8;
+  --cp-surface: #ffffff;
+  --cp-surface-soft: #f5f5f5;
+  --cp-border: #dedede;
+  --cp-border-strong: #919191;
+  --cp-text: #242424;
+  --cp-text-muted: #5c5c5c;
+  --cp-text-soft: #6f6f6f;
+  --cp-accent: #b11f4b;
+  --cp-accent-hover: #9a1a41;
+  --cp-accent-soft: rgba(177, 31, 75, 0.08);
+  --cp-accent-fg: #ffffff;
+  --cp-success: #16a34a;
+  --cp-danger: #dc2626;
+  --cp-warning: #f59e0b;
+  --cp-link: #0078d4;
+  --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.12);
+  --cp-overlay: rgba(255, 255, 255, 0.8);
+  --cp-panel: rgba(255, 255, 255, 0.86);
+  --cp-panel-strong: rgba(255, 255, 255, 0.96);
+  --cp-sheen: rgba(255, 255, 255, 0.55);
+  --cp-highlight: rgba(177, 31, 75, 0.12);
+}
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --cp-bg: #3d3b3a;
+  --cp-bg-elevated: #343231;
+  --cp-surface: #292929;
+  --cp-surface-soft: #2e2e2e;
+  --cp-border: #474747;
+  --cp-border-strong: #5f5f5f;
+  --cp-text: #dedede;
+  --cp-text-muted: #919191;
+  --cp-text-soft: #b0b0b0;
+  --cp-accent: #fd8ea1;
+  --cp-accent-hover: #fb7b91;
+  --cp-accent-soft: rgba(253, 142, 161, 0.14);
+  --cp-accent-fg: #1a1a1a;
+  --cp-success: #4ade80;
+  --cp-danger: #f87171;
+  --cp-warning: #fbbf24;
+  --cp-link: #4da6ff;
+  --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.32);
+  --cp-overlay: rgba(41, 41, 41, 0.88);
+  --cp-panel: rgba(41, 41, 41, 0.72);
+  --cp-panel-strong: rgba(41, 41, 41, 0.96);
+  --cp-sheen: rgba(255, 255, 255, 0.04);
+  --cp-highlight: rgba(253, 142, 161, 0.12);
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0; color: var(--cp-text);
+  background: radial-gradient(1100px 360px at 18% -8%, var(--cp-accent-soft), transparent 60%), var(--cp-bg);
+  background-attachment: fixed;
+  font-family: "Segoe UI", Aptos, Calibri, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 14px; line-height: 1.45;
+  display: flex; flex-direction: column;
+}
+code, pre, .mono { font-family: Consolas, "Courier New", Courier, monospace; }
+a { color: var(--cp-link); text-decoration: none; }
+a:hover { text-decoration: underline; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: var(--cp-border); border-radius: 8px; border: 2px solid transparent; background-clip: content-box; }
+::-webkit-scrollbar-thumb:hover { background-color: var(--cp-border-strong); }
+::-webkit-scrollbar-track { background: transparent; }
+::selection { background: var(--cp-highlight); }
+
+/* ---------- top bar ---------- */
+.topbar {
+  position: sticky; top: 0; z-index: 40; display: flex; align-items: center; gap: 18px;
+  padding: 9px 22px; background: var(--cp-panel-strong); border-bottom: 1px solid var(--cp-border);
+  backdrop-filter: blur(10px);
+}
+.brand { display: flex; align-items: center; gap: 10px; user-select: none; }
+.brand .mark {
+  width: 34px; height: 34px; border-radius: 0.625rem; display: grid; place-items: center;
+  background: var(--cp-accent-soft); color: var(--cp-accent);
+  border: 1px solid var(--cp-border);
+}
+.brand .mark svg { width: 20px; height: 20px; }
+.brand .word { line-height: 1.15; }
+.brand .word .l1 { font-size: 15.5px; font-weight: 700; letter-spacing: -.01em; }
+.brand .word .l1 em { font-style: normal; color: var(--cp-accent); }
+.brand .word .l2 { font-size: 10.5px; color: var(--cp-text-soft); letter-spacing: .05em; text-transform: uppercase; }
+nav.tabs {
+  display: flex; gap: 2px; background: var(--cp-surface-soft);
+  border: 1px solid var(--cp-border); border-radius: 0.625rem; padding: 3px;
+}
+nav.tabs a {
+  display: flex; align-items: center; gap: 7px; padding: 5px 13px; border-radius: 8px;
+  color: var(--cp-text-muted); font-weight: 500; font-size: 13px;
+}
+nav.tabs a svg { width: 14px; height: 14px; }
+nav.tabs a:hover { color: var(--cp-text); text-decoration: none; }
+nav.tabs a.on {
+  background: var(--cp-surface); color: var(--cp-accent);
+  box-shadow: 0 0 2px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.14);
+}
+.topbar .spacer { flex: 1; }
+.scaninfo { color: var(--cp-text-soft); font-size: 12px; text-align: right; line-height: 1.3; }
+button, select, input[type=text], input[type=search], input[type=date] {
+  font: inherit; color: var(--cp-text); background: var(--cp-surface);
+  border: 1px solid var(--cp-border); border-radius: 0.625rem; padding: 6px 11px;
+  transition: border-color .12s ease, background .12s ease;
+}
+button { cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+button svg { width: 14px; height: 14px; }
+button:hover { border-color: var(--cp-border-strong); }
+button.primary { background: var(--cp-accent); border-color: var(--cp-accent); color: var(--cp-accent-fg); }
+button.primary:hover { background: var(--cp-accent-hover); }
+button:disabled { opacity: .55; cursor: wait; }
+input:focus, select:focus, button:focus-visible { outline: 2px solid var(--cp-accent-soft); border-color: var(--cp-accent); }
+
+main { max-width: 1300px; width: 100%; margin: 0 auto; padding: 22px 22px 30px; flex: 1; }
+.view { display: none; }
+.view.on { display: block; animation: fadein .18s ease; }
+@keyframes fadein { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; } }
+
+/* ---------- cards ---------- */
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(172px, 1fr)); gap: 10px; }
+.card {
+  position: relative; background: var(--cp-surface); border: 1px solid var(--cp-border);
+  border-radius: 16px; padding: 13px 15px;
+  box-shadow: 0 0 2px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.14);
+  transition: border-color .12s ease, transform .12s ease;
+}
+.card:hover { border-color: var(--cp-border-strong); transform: translateY(-1px); }
+.card .ic { position: absolute; top: 11px; right: 12px; color: var(--cp-text-soft); opacity: .8; }
+.card .ic svg { width: 17px; height: 17px; }
+.card:hover .ic { color: var(--cp-accent); opacity: 1; }
+.card .k { color: var(--cp-text-soft); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; padding-right: 24px; }
+.card .v { font-size: 22px; font-weight: 700; margin-top: 3px; letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
+.card .s { color: var(--cp-text-muted); font-size: 12px; margin-top: 1px; }
+
+.panel {
+  background: var(--cp-surface); border: 1px solid var(--cp-border); border-radius: 16px;
+  padding: 16px 18px; margin-top: 16px;
+  box-shadow: 0 0 2px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.14);
+}
+.panel h3 {
+  margin: -2px 0 12px; font-size: 12px; display: flex; align-items: center; gap: 8px;
+  text-transform: uppercase; letter-spacing: .07em; color: var(--cp-text-muted); font-weight: 600;
+}
+.panel h3::before { content: ""; width: 4px; height: 14px; border-radius: 2px; background: var(--cp-accent); }
+.panel h3 .right { margin-left: auto; display: flex; gap: 6px; align-items: center; text-transform: none; letter-spacing: 0; font-weight: 400; }
+
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 980px) { .grid2 { grid-template-columns: 1fr; } }
+
+/* ---------- tables ---------- */
+table.data { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.data th {
+  text-align: left; color: var(--cp-text-soft); font-weight: 600; font-size: 11px;
+  text-transform: uppercase; letter-spacing: .05em; padding: 7px 9px;
+  border-bottom: 1px solid var(--cp-border); white-space: nowrap;
+  background: var(--cp-surface);
+}
+table.data td { padding: 8px 9px; border-bottom: 1px solid var(--cp-border); vertical-align: top; }
+table.data tr:last-child td { border-bottom: none; }
+table.data tr.click { cursor: pointer; }
+table.data tr.click:hover td { background: var(--cp-accent-soft); }
+table.data tr.click td:first-child { border-radius: 8px 0 0 8px; }
+table.data tr.click td:last-child { border-radius: 0 8px 8px 0; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+.chip {
+  display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 11.5px;
+  background: var(--cp-surface-soft); border: 1px solid var(--cp-border); color: var(--cp-text-muted);
+  margin: 1px 2px 1px 0; white-space: nowrap;
+}
+.chip.model { background: var(--cp-accent-soft); color: var(--cp-accent); border-color: transparent; font-weight: 500; }
+.badge-active { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--cp-success); margin-right: 5px; box-shadow: 0 0 0 3px color-mix(in srgb, var(--cp-success) 20%, transparent); }
+.pos { color: var(--cp-success); } .neg { color: var(--cp-danger); }
+.muted { color: var(--cp-text-muted); } .soft { color: var(--cp-text-soft); }
+.small { font-size: 12px; }
+.bar-bg { background: var(--cp-surface-soft); border-radius: 4px; height: 8px; overflow: hidden; }
+.bar-fg { background: var(--cp-accent); height: 100%; border-radius: 4px; }
+
+/* ---------- filters / pager ---------- */
+.filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+.filters .searchwrap { flex: 1; min-width: 260px; }
+.searchwrap { position: relative; display: flex; }
+.searchwrap svg {
+  position: absolute; left: 11px; top: 50%; transform: translateY(-50%);
+  width: 15px; height: 15px; color: var(--cp-text-soft); pointer-events: none;
+}
+.searchwrap input { width: 100%; padding-left: 33px; }
+.pager { display: flex; gap: 8px; align-items: center; justify-content: flex-end; margin-top: 12px; color: var(--cp-text-muted); font-size: 12.5px; }
+
+/* ---------- search view ---------- */
+.searchhero { max-width: 860px; margin: 0 auto; }
+.searchhero .searchwrap input { font-size: 15.5px; padding: 12px 16px 12px 40px; border-radius: 14px; }
+.searchhero .searchwrap svg { left: 14px; width: 17px; height: 17px; }
+.rolechips { display: flex; gap: 6px; margin: 12px 0 4px; flex-wrap: wrap; }
+.rolechips button { border-radius: 999px; padding: 4px 13px; font-size: 12.5px; }
+.rolechips button.on { background: var(--cp-accent); color: var(--cp-accent-fg); border-color: var(--cp-accent); }
+#searchmeta { margin: 8px 2px; }
+.hit {
+  padding: 11px 14px; border: 1px solid var(--cp-border); border-radius: 0.625rem;
+  cursor: pointer; margin-bottom: 8px; background: var(--cp-surface);
+  transition: border-color .12s ease, transform .12s ease;
+}
+.hit:hover { border-color: var(--cp-accent); transform: translateY(-1px); }
+.hit .top { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.hit .name { font-weight: 600; }
+.hit .snippet { margin-top: 4px; color: var(--cp-text-muted); font-size: 13px; }
+mark { background: var(--cp-highlight); color: inherit; border-radius: 3px; padding: 0 1px; font-weight: 600; }
+.rolebadge {
+  font-size: 10px; padding: 1.5px 8px; border-radius: 999px; border: 1px solid var(--cp-border);
+  color: var(--cp-text-soft); text-transform: uppercase; letter-spacing: .06em; font-weight: 600;
+}
+.rolebadge.r0 { color: var(--cp-accent); border-color: var(--cp-accent); background: var(--cp-accent-soft); }
+.rolebadge.r2 { color: var(--cp-success); border-color: var(--cp-success); }
+
+/* ---------- repos ---------- */
+.repogrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px; }
+.repocard {
+  background: var(--cp-surface); border: 1px solid var(--cp-border); border-radius: 16px; padding: 15px;
+  box-shadow: 0 0 2px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.14);
+  transition: border-color .12s ease, transform .12s ease;
+}
+.repocard:hover { border-color: var(--cp-border-strong); transform: translateY(-1px); }
+.repocard .head { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; }
+.avatar {
+  flex: 0 0 36px; width: 36px; height: 36px; border-radius: 0.625rem; display: grid; place-items: center;
+  background: var(--cp-accent-soft); color: var(--cp-accent); font-weight: 700; font-size: 15px;
+}
+.repocard .head .t { flex: 1; min-width: 0; }
+.repocard .head .t .n { font-weight: 650; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.repocard .head .t .w { font-size: 11px; color: var(--cp-text-soft); }
+.repocard .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 10px 0; }
+.repocard .stats div { background: var(--cp-surface-soft); border-radius: 0.625rem; padding: 7px 9px; }
+.repocard .stats .k { font-size: 10px; color: var(--cp-text-soft); text-transform: uppercase; letter-spacing: .05em; }
+.repocard .stats .v { font-weight: 700; font-variant-numeric: tabular-nums; }
+.repocard .top a { display: block; font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 1.5px 0; }
+
+/* ---------- drawer ---------- */
+#overlay { position: fixed; inset: 0; background: var(--cp-overlay); z-index: 90; display: none; }
+#drawer {
+  position: fixed; top: 0; right: 0; bottom: 0; width: min(800px, 96vw); z-index: 100;
+  background: var(--cp-bg-elevated); border-left: 1px solid var(--cp-border);
+  box-shadow: var(--cp-shadow); transform: translateX(102%); transition: transform .2s ease;
+  display: flex; flex-direction: column;
+}
+#drawer.open { transform: none; }
+#drawer .dhead {
+  padding: 13px 18px; border-bottom: 1px solid var(--cp-border); display: flex; gap: 10px;
+  align-items: center; background: var(--cp-panel-strong);
+}
+#drawer .dhead .mark { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; background: var(--cp-accent-soft); color: var(--cp-accent); flex: 0 0 30px; }
+#drawer .dhead .mark svg { width: 17px; height: 17px; }
+#drawer .dhead h2 { margin: 0; font-size: 15.5px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#drawer .dbody { overflow-y: auto; padding: 16px 18px 44px; }
+.metagrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(215px, 1fr)); gap: 8px; }
+.metagrid .mi { background: var(--cp-surface); border: 1px solid var(--cp-border); border-radius: 0.625rem; padding: 7px 11px; }
+.metagrid .mi .k { font-size: 10px; color: var(--cp-text-soft); text-transform: uppercase; letter-spacing: .05em; }
+.metagrid .mi .v { font-size: 13px; word-break: break-all; }
+.turn { border: 1px solid var(--cp-border); border-radius: 0.625rem; padding: 9px 13px; margin-bottom: 8px; background: var(--cp-surface); }
+.turn.u { border-left: 3px solid var(--cp-accent); }
+.turn.s2 { border-left: 3px solid var(--cp-success); }
+.turn .thead { display: flex; gap: 8px; align-items: baseline; font-size: 11.5px; color: var(--cp-text-soft); flex-wrap: wrap; }
+.turn pre { margin: 7px 0 0; white-space: pre-wrap; word-break: break-word; font-size: 12.5px; max-height: 300px; overflow: hidden; }
+.turn.expanded pre { max-height: none; }
+.turn .more { color: var(--cp-link); cursor: pointer; font-size: 12px; }
+.turn.flash { background: var(--cp-highlight); }
+details.files summary { cursor: pointer; color: var(--cp-text-muted); font-weight: 600; font-size: 12.5px; }
+details.files li { font-family: Consolas, "Courier New", Courier, monospace; font-size: 12px; word-break: break-all; padding: 1px 0; }
+.summaryblock { background: var(--cp-surface); border: 1px solid var(--cp-border); border-left: 3px solid var(--cp-success); border-radius: 0.625rem; padding: 11px 13px; margin-bottom: 8px; }
+.summaryblock pre { margin: 0; white-space: pre-wrap; word-break: break-word; font-size: 12.5px; font-family: inherit; }
+
+.empty { text-align: center; color: var(--cp-text-soft); padding: 44px 0 36px; }
+.empty svg { width: 30px; height: 30px; opacity: .5; display: block; margin: 0 auto 8px; }
+svg text { fill: var(--cp-text-soft); font-size: 10px; font-family: inherit; }
+.copybtn { font-size: 11px; padding: 3px 9px; }
+footer { text-align: center; color: var(--cp-text-soft); font-size: 11.5px; padding: 14px 0 20px; }
+footer .sep { margin: 0 8px; opacity: .5; }
+footer a { color: var(--cp-text-muted); text-decoration: underline; cursor: pointer; }
+
+/* ---------- about modal ---------- */
+#about { position: fixed; inset: 0; z-index: 120; display: none; place-items: center; padding: 20px; }
+#about.open { display: grid; }
+.aboutcard {
+  width: min(940px, 96vw); max-height: 92vh; overflow-y: auto;
+  background: var(--cp-bg-elevated); border: 1px solid var(--cp-border); border-radius: 16px;
+  box-shadow: var(--cp-shadow); padding: 18px 22px 20px;
+}
+.aboutcard .ahead { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.aboutcard .ahead .mark { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; background: var(--cp-accent-soft); color: var(--cp-accent); }
+.aboutcard .ahead .mark svg { width: 17px; height: 17px; }
+.aboutcard .ahead h2 { margin: 0; font-size: 16px; flex: 1; }
+.aboutcard .diag { margin: 10px 0 4px; }
+.aboutcard svg.pipeline { width: 100%; height: auto; display: block; }
+svg.pipeline rect.box { fill: var(--cp-surface); stroke: var(--cp-border); stroke-width: 1.2; }
+svg.pipeline rect.box.hot { stroke: var(--cp-accent); stroke-width: 1.4; }
+svg.pipeline text.t1 { fill: var(--cp-text); font-size: 11.5px; font-weight: 650; }
+svg.pipeline text.t2 { fill: var(--cp-text-soft); font-size: 9.5px; }
+svg.pipeline text.lbl { fill: var(--cp-text-muted); font-size: 9px; font-style: italic; }
+svg.pipeline .flow { stroke: var(--cp-border-strong); stroke-width: 1.3; fill: none; }
+.aboutnotes { display: grid; gap: 8px; margin-top: 12px; }
+.aboutnotes .note {
+  display: flex; gap: 10px; align-items: flex-start; font-size: 12.5px; color: var(--cp-text-muted);
+  background: var(--cp-surface); border: 1px solid var(--cp-border); border-radius: 0.625rem; padding: 9px 12px;
+}
+.aboutnotes .note b { color: var(--cp-text); }
+.aboutnotes .note .dot { flex: 0 0 6px; width: 6px; height: 6px; border-radius: 50%; background: var(--cp-accent); margin-top: 6px; }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="mark">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3.5 12a8.5 8.5 0 1 0 2.2-5.7"/><path d="M3.5 4v4.5H8"/><path d="M12 7.5V12l3.2 2"/>
+      </svg>
+    </span>
+    <span class="word">
+      <div class="l1">Copilot <em>Historian</em></div>
+      <div class="l2">your session history, explored</div>
+    </span>
+  </div>
+  <nav class="tabs">
+    <a href="#/overview" data-tab="overview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="7.5" height="7.5" rx="1.5"/><rect x="13" y="3.5" width="7.5" height="7.5" rx="1.5"/><rect x="3.5" y="13" width="7.5" height="7.5" rx="1.5"/><rect x="13" y="13" width="7.5" height="7.5" rx="1.5"/></svg>Overview</a>
+    <a href="#/sessions" data-tab="sessions"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/></svg>Sessions</a>
+    <a href="#/search" data-tab="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg>Search</a>
+    <a href="#/repos" data-tab="repos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6a2 2 0 0 1 2-2h4l2 2.5h6a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6z"/></svg>Repos</a>
+  </nav>
+  <div class="spacer"></div>
+  <span class="scaninfo" id="scaninfo"></span>
+  <button id="rescan" title="Re-scan the session directory"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.5-6"/><path d="M20.5 3.5V9H15"/></svg>Rescan</button>
+  <button id="aboutbtn" title="How it works"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M9.6 9.3a2.5 2.5 0 1 1 3.4 2.7c-.8.35-1 .9-1 1.7"/><path d="M12 17h.01"/></svg></button>
+  <button id="themetoggle" title="Toggle light/dark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z"/></svg></button>
+</header>
+<main>
+  <section class="view" id="view-overview">
+    <div class="cards" id="statcards"></div>
+    <div class="panel">
+      <h3>Daily activity
+        <span class="right">
+          <select id="dailymetric">
+            <option value="aiu">AIU</option>
+            <option value="premium">Premium requests</option>
+            <option value="input">Input tokens</option>
+            <option value="output">Output tokens</option>
+            <option value="cache_read">Cache read</option>
+            <option value="user_turns">User turns</option>
+            <option value="sessions">Sessions started</option>
+          </select>
+        </span>
+      </h3>
+      <div id="dailychart"></div>
+    </div>
+    <div class="panel">
+      <h3>Models</h3>
+      <div style="overflow-x:auto"><table class="data" id="modelstable"></table></div>
+    </div>
+    <div class="grid2">
+      <div class="panel"><h3>Top repos / directories <span class="right small soft">by AIU</span></h3><div id="toprepos"></div></div>
+      <div class="panel"><h3>Tool usage</h3><div id="tooluse"></div></div>
+    </div>
+  </section>
+
+  <section class="view" id="view-sessions">
+    <div class="panel">
+      <div class="filters">
+        <span class="searchwrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg>
+          <input type="search" id="f-q" placeholder="Filter sessions — full-text across messages, files, repos…">
+        </span>
+        <select id="f-repo"><option value="">All repos</option></select>
+        <select id="f-model"><option value="">All models</option></select>
+        <input type="date" id="f-from" title="From date">
+        <input type="date" id="f-to" title="To date">
+        <select id="f-sort">
+          <option value="updated">Last active</option>
+          <option value="created">Created</option>
+          <option value="tokens">Tokens</option>
+          <option value="aiu">AIU</option>
+          <option value="premium">Premium</option>
+          <option value="turns">User turns</option>
+          <option value="duration">Duration</option>
+        </select>
+        <button id="f-dir" title="Toggle sort direction">↓</button>
+      </div>
+      <div style="overflow-x:auto"><table class="data" id="sessionstable"></table></div>
+      <div class="pager">
+        <span id="pageinfo"></span>
+        <button id="prevpage">‹ Prev</button>
+        <button id="nextpage">Next ›</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" id="view-search">
+    <div class="searchhero">
+      <span class="searchwrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg>
+        <input type="search" id="s-q" placeholder="Search everything — prompts, replies, summaries, file paths, repos…">
+      </span>
+      <div class="rolechips" id="rolechips">
+        <button data-role="" class="on">All</button>
+        <button data-role="0">My prompts</button>
+        <button data-role="1">Assistant</button>
+        <button data-role="2">Task summaries</button>
+        <button data-role="3">Metadata</button>
+      </div>
+      <div id="searchmeta" class="soft small"></div>
+      <div id="searchresults"></div>
+    </div>
+  </section>
+
+  <section class="view" id="view-repos">
+    <div class="repogrid" id="repogrid"></div>
+  </section>
+</main>
+<footer>
+  <span id="foot-root"></span><span class="sep">·</span><a id="footabout">how it works</a><span class="sep">·</span>local &amp; read-only<span class="sep">·</span>nothing leaves your machine
+</footer>
+
+<div id="overlay"></div>
+<div id="about">
+  <div class="aboutcard">
+    <div class="ahead">
+      <span class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12a8.5 8.5 0 1 0 2.2-5.7"/><path d="M3.5 4v4.5H8"/><path d="M12 7.5V12l3.2 2"/></svg></span>
+      <h2>How Copilot Historian works</h2>
+      <button id="a-close">✕ Close</button>
+    </div>
+    <div class="diag">
+      <svg class="pipeline" viewBox="0 0 900 250">
+        <defs>
+          <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0L10 5L0 10z" fill="var(--cp-border-strong)"/>
+          </marker>
+        </defs>
+        <!-- 1. session store -->
+        <rect class="box" x="8" y="81" width="158" height="88" rx="12"/>
+        <text class="t1" x="87" y="103" text-anchor="middle">Session store</text>
+        <text class="t2" x="87" y="121" text-anchor="middle">~/.copilot/session-state</text>
+        <text class="t2" x="87" y="135" text-anchor="middle">events.jsonl · workspace.yaml</text>
+        <text class="t2" x="87" y="149" text-anchor="middle">opened read-only</text>
+        <!-- 2. scanner -->
+        <rect class="box" x="196" y="81" width="158" height="88" rx="12"/>
+        <text class="t1" x="275" y="103" text-anchor="middle">Parallel scanner</text>
+        <text class="t2" x="275" y="121" text-anchor="middle">rayon — all sessions at once</text>
+        <text class="t2" x="275" y="135" text-anchor="middle">head-of-line type filter skips</text>
+        <text class="t2" x="275" y="149" text-anchor="middle">MB-scale tool payloads</text>
+        <!-- 3a. model -->
+        <rect class="box" x="384" y="20" width="158" height="88" rx="12"/>
+        <text class="t1" x="463" y="42" text-anchor="middle">In-memory model</text>
+        <text class="t2" x="463" y="60" text-anchor="middle">sessions · turns · files · repos</text>
+        <text class="t2" x="463" y="74" text-anchor="middle">tokens · premium · AIU</text>
+        <text class="t2" x="463" y="88" text-anchor="middle">(AIU = nanoAiu ÷ 10⁹)</text>
+        <!-- 3b. index -->
+        <rect class="box" x="384" y="142" width="158" height="88" rx="12"/>
+        <text class="t1" x="463" y="164" text-anchor="middle">Search index</text>
+        <text class="t2" x="463" y="182" text-anchor="middle">inverted: word → message</text>
+        <text class="t2" x="463" y="196" text-anchor="middle">AND queries, prefix match</text>
+        <text class="t2" x="463" y="210" text-anchor="middle">on the last word</text>
+        <!-- 4. server -->
+        <rect class="box" x="572" y="81" width="158" height="88" rx="12"/>
+        <text class="t1" x="651" y="103" text-anchor="middle">Embedded server</text>
+        <text class="t2" x="651" y="121" text-anchor="middle">tiny_http · 127.0.0.1 only</text>
+        <text class="t2" x="651" y="135" text-anchor="middle">/api/* JSON endpoints</text>
+        <text class="t2" x="651" y="149" text-anchor="middle">UI baked in at compile time</text>
+        <!-- 5. browser -->
+        <rect class="box hot" x="760" y="81" width="132" height="88" rx="12"/>
+        <text class="t1" x="826" y="103" text-anchor="middle">Your browser</text>
+        <text class="t2" x="826" y="121" text-anchor="middle">Overview · Sessions</text>
+        <text class="t2" x="826" y="135" text-anchor="middle">Search · Repos</text>
+        <text class="t2" x="826" y="149" text-anchor="middle">session drill-down</text>
+        <!-- arrows -->
+        <path class="flow" d="M166 125 H194" marker-end="url(#arr)"/>
+        <text class="lbl" x="180" y="117" text-anchor="middle">scan</text>
+        <path class="flow" d="M354 108 L382 72" marker-end="url(#arr)"/>
+        <path class="flow" d="M354 142 L382 178" marker-end="url(#arr)"/>
+        <path class="flow" d="M542 66 L570 106" marker-end="url(#arr)"/>
+        <path class="flow" d="M542 184 L570 144" marker-end="url(#arr)"/>
+        <path class="flow" d="M730 125 H758" marker-end="url(#arr)"/>
+        <text class="lbl" x="744" y="117" text-anchor="middle">JSON</text>
+      </svg>
+    </div>
+    <div class="aboutnotes">
+      <div class="note"><span class="dot"></span><span><b>One binary, zero prerequisites.</b> The whole dashboard — scanner, search index, HTTP server and this UI — ships inside a single ~1 MB executable. Nothing is installed, nothing is written to disk, nothing leaves your machine.</span></div>
+      <div class="note"><span class="dot"></span><span><b>Where the numbers come from.</b> Each CLI run appends a <span class="mono">session.shutdown</span> event per run segment. Historian sums those segments: token details, premium requests, <span class="mono">totalNanoAiu</span>, per-model metrics, and code changes (lines ± and files touched). Sessions that never shut down cleanly show "—".</span></div>
+      <div class="note"><span class="dot"></span><span><b>Premium vs AIU.</b> Premium requests are the <i>billing</i> unit (flat per user request, weighted by model multiplier). AIU — AI Units — measure the <i>compute actually consumed</i>, scaling with tokens, model tier and reasoning effort. Comparing both tells you which models burn hottest per request.</span></div>
+      <div class="note"><span class="dot"></span><span><b>Rescan</b> re-reads the directory in place and atomically swaps the in-memory snapshot — new and still-running sessions appear without restarting.</span></div>
+    </div>
+  </div>
+</div>
+<aside id="drawer">
+  <div class="dhead">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12a8.5 8.5 0 1 0 2.2-5.7"/><path d="M3.5 4v4.5H8"/><path d="M12 7.5V12l3.2 2"/></svg></span>
+    <h2 id="d-title"></h2>
+    <button class="copybtn" id="d-copy">copy id</button>
+    <button id="d-close">✕ Close</button>
+  </div>
+  <div class="dbody" id="d-body"></div>
+</aside>
+
+<script>
+"use strict";
+const $ = (s, el) => (el || document).querySelector(s);
+const $$ = (s, el) => Array.from((el || document).querySelectorAll(s));
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt = n => {
+  n = Number(n) || 0;
+  if (Math.abs(n) >= 1e9) return (n/1e9).toFixed(2) + "B";
+  if (Math.abs(n) >= 1e6) return (n/1e6).toFixed(2) + "M";
+  if (Math.abs(n) >= 1e4) return (n/1e3).toFixed(1) + "K";
+  if (Number.isInteger(n)) return n.toLocaleString();
+  return Math.abs(n) >= 100 ? Math.round(n).toLocaleString() : n.toFixed(1);
+};
+const fmtAiu = n => (Number(n)||0) >= 100 ? fmt(Math.round(n)) : (Number(n)||0).toFixed(1);
+const fmtDur = ms => {
+  ms = Number(ms) || 0;
+  if (ms <= 0) return "—";
+  const m = Math.round(ms/60000), h = Math.floor(m/60), d = Math.floor(h/24);
+  if (d > 0) return d + "d " + (h % 24) + "h";
+  if (h > 0) return h + "h " + (m % 60) + "m";
+  if (m > 0) return m + "m";
+  return Math.round(ms/1000) + "s";
+};
+const rel = ts => {
+  if (!ts) return "—";
+  const dt = new Date(ts), diff = Date.now() - dt.getTime();
+  const m = Math.floor(diff/60000), h = Math.floor(m/60), d = Math.floor(h/24);
+  if (m < 1) return "just now";
+  if (m < 60) return m + "m ago";
+  if (h < 48) return h + "h ago";
+  if (d < 30) return d + "d ago";
+  return dt.toLocaleDateString();
+};
+const full = ts => ts ? new Date(ts).toLocaleString() : "—";
+const roleName = r => ({0:"you",1:"assistant",2:"summary",3:"meta"})[r] ?? r;
+const api = async (path) => {
+  const r = await fetch(path);
+  if (!r.ok) throw new Error(path + " -> " + r.status);
+  return r.json();
+};
+const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
+const highlight = (text, toks) => {
+  let h = esc(text);
+  for (const t of (toks || [])) {
+    if (!t) continue;
+    h = h.replace(new RegExp("(" + t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")", "gi"), "<mark>$1</mark>");
+  }
+  return h;
+};
+const icon = p => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+const ICONS = {
+  sessions: icon('<path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/>'),
+  prompts: icon('<path d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H9l-5 4V6z"/>'),
+  tools: icon('<path d="M4 5h16v14H4z"/><path d="M7.5 9.5l3 2.5-3 2.5"/><path d="M13 15h4"/>'),
+  input: icon('<path d="M12 3v11"/><path d="M8 10l4 4 4-4"/><path d="M5 20h14"/>'),
+  cache: icon('<ellipse cx="12" cy="5.5" rx="7" ry="2.5"/><path d="M5 5.5V18c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5V5.5"/><path d="M5 12c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5"/>'),
+  output: icon('<path d="M12 21V10"/><path d="M8 14l4-4 4 4"/><path d="M5 4h14"/>'),
+  premium: icon('<path d="M12 3.5l2.5 5.2 5.7.8-4.1 4 1 5.7L12 16.5l-5.1 2.7 1-5.7-4.1-4 5.7-.8L12 3.5z"/>'),
+  aiu: icon('<path d="M13 2.5L4.5 14H11l-1.5 7.5L18 10h-6.5L13 2.5z"/>'),
+  code: icon('<path d="M8 7.5L3.5 12 8 16.5"/><path d="M16 7.5l4.5 4.5L16 16.5"/><path d="M13.5 5l-3 14"/>'),
+  time: icon('<circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3.5 2"/>'),
+  empty: icon('<circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/><path d="M8 10.5h5"/>'),
+};
+
+let OV = null; // cached overview
+
+// ---------- routing ----------
+function route() {
+  const hash = location.hash || "#/overview";
+  const seg = hash.slice(2).split("/");
+  const tab = ["overview","sessions","search","repos"].includes(seg[0]) ? seg[0] : "overview";
+  $$(".view").forEach(v => v.classList.remove("on"));
+  $("#view-" + tab).classList.add("on");
+  $$("nav.tabs a").forEach(a => a.classList.toggle("on", a.dataset.tab === tab));
+  if (tab === "overview") renderOverview();
+  if (tab === "sessions") loadSessions();
+  if (tab === "search") $("#s-q").focus();
+  if (tab === "repos") renderRepos();
+}
+window.addEventListener("hashchange", route);
+
+// ---------- overview ----------
+async function loadOverview(force) {
+  if (!OV || force) {
+    OV = await api("/api/overview");
+    $("#scaninfo").innerHTML = `${OV.totals.sessions} sessions<br>scanned in ${OV.scan_ms} ms`;
+    $("#foot-root").textContent = OV.root;
+    fillFilterOptions();
+  }
+  return OV;
+}
+function statCard(k, v, s, ic) {
+  return `<div class="card">${ic ? `<span class="ic">${ic}</span>` : ""}<div class="k">${k}</div><div class="v">${v}</div>${s ? `<div class="s">${s}</div>` : ""}</div>`;
+}
+function emptyBox(msg) {
+  return `<div class="empty">${ICONS.empty}${esc(msg)}</div>`;
+}
+async function renderOverview() {
+  const ov = await loadOverview();
+  const t = ov.totals;
+  $("#statcards").innerHTML =
+    statCard("Sessions", fmt(t.sessions), t.active + " active now", ICONS.sessions) +
+    statCard("Your prompts", fmt(t.user_turns), fmt(t.assistant_msgs) + " assistant msgs", ICONS.prompts) +
+    statCard("Tool calls", fmt(t.tool_calls), fmt(t.subagents) + " subagents", ICONS.tools) +
+    statCard("Input tokens", fmt(t.input), "fresh (uncached)", ICONS.input) +
+    statCard("Cache read", fmt(t.cache_read), "context reuse", ICONS.cache) +
+    statCard("Output tokens", fmt(t.output), "", ICONS.output) +
+    statCard("Premium requests", fmt(Math.round(t.premium)), "", ICONS.premium) +
+    statCard("AIU consumed", fmtAiu(t.aiu), "AI units", ICONS.aiu) +
+    statCard("Code changed", `<span class="pos">+${fmt(t.lines_added)}</span> <span class="neg">−${fmt(t.lines_removed)}</span>`, fmt(t.files) + " files touched", ICONS.code) +
+    statCard("Model API time", fmtDur(t.api_ms), "", ICONS.time);
+  renderDaily();
+  renderModels(ov);
+  renderTopRepos(ov);
+  renderTools(ov);
+}
+function renderDaily() {
+  if (!OV) return;
+  const metric = $("#dailymetric").value;
+  const days = OV.daily;
+  const el = $("#dailychart");
+  if (!days.length) { el.innerHTML = emptyBox("no data yet"); return; }
+  const W = el.clientWidth || 900, H = 210, padL = 58, padB = 30, padT = 12;
+  const max = Math.max(...days.map(d => Number(d[metric]) || 0), 1);
+  const bw = Math.max(2, (W - padL - 8) / days.length - 2);
+  let bars = "", labels = "";
+  days.forEach((d, i) => {
+    const v = Number(d[metric]) || 0;
+    const h = (H - padB - padT) * v / max;
+    const x = padL + i * ((W - padL - 8) / days.length);
+    bars += `<rect x="${x.toFixed(1)}" y="${(H - padB - h).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(h,0.5).toFixed(1)}" rx="2" fill="var(--cp-accent)" opacity="${v ? 0.9 : 0.25}"><title>${d.date}: ${fmt(v)} ${metric}</title></rect>`;
+    const every = Math.ceil(days.length / Math.floor((W - padL) / 68));
+    if (i % every === 0) labels += `<text x="${(x + bw/2).toFixed(1)}" y="${H - 10}" text-anchor="middle">${d.date.slice(5)}</text>`;
+  });
+  let grid = "";
+  for (let g = 0; g <= 4; g++) {
+    const y = padT + (H - padB - padT) * g / 4;
+    grid += `<line x1="${padL}" y1="${y}" x2="${W-4}" y2="${y}" stroke="var(--cp-border)" stroke-width="0.5"/>` +
+            `<text x="${padL - 6}" y="${y + 3}" text-anchor="end">${fmt(max * (4-g) / 4)}</text>`;
+  }
+  el.innerHTML = `<svg width="${W}" height="${H}">${grid}${bars}${labels}</svg>`;
+}
+function renderModels(ov) {
+  const rows = ov.models;
+  if (!rows.length) { $("#modelstable").innerHTML = ""; return; }
+  const maxAiu = Math.max(...rows.map(m => m.aiu), 0.001);
+  $("#modelstable").innerHTML =
+    `<tr><th>Model</th><th class="num">Sessions</th><th class="num">Requests</th><th class="num">Premium</th><th class="num">Input</th><th class="num">Cache read</th><th class="num">Output</th><th class="num">Reasoning</th><th class="num">AIU</th><th style="width:130px">Share</th></tr>` +
+    rows.map(m => `<tr>
+      <td><span class="chip model">${esc(m.name)}</span></td>
+      <td class="num">${fmt(m.sessions)}</td><td class="num">${fmt(m.requests)}</td>
+      <td class="num">${fmt(Math.round(m.premium))}</td>
+      <td class="num">${fmt(m.input)}</td><td class="num">${fmt(m.cache_read)}</td>
+      <td class="num">${fmt(m.output)}</td><td class="num">${fmt(m.reasoning)}</td>
+      <td class="num"><b>${fmtAiu(m.aiu)}</b></td>
+      <td><div class="bar-bg"><div class="bar-fg" style="width:${(100 * m.aiu / maxAiu).toFixed(1)}%"></div></div></td>
+    </tr>`).join("");
+}
+function renderTopRepos(ov) {
+  const rows = ov.repos.slice(0, 10);
+  const max = Math.max(...rows.map(r => r.aiu), 0.001);
+  $("#toprepos").innerHTML = rows.map(r => `
+    <div style="display:flex;align-items:center;gap:10px;padding:4px 0">
+      <a href="#/sessions" onclick="setRepoFilter('${esc(r.name)}')" style="flex:0 0 230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(r.name)}">${esc(r.name)}</a>
+      <div class="bar-bg" style="flex:1"><div class="bar-fg" style="width:${(100*r.aiu/max).toFixed(1)}%"></div></div>
+      <span class="num soft small" style="flex:0 0 125px;text-align:right">${fmtAiu(r.aiu)} AIU · ${r.sessions} sess</span>
+    </div>`).join("") || emptyBox("no data yet");
+}
+function renderTools(ov) {
+  $("#tooluse").innerHTML = ov.tools.slice(0, 24).map(t =>
+    `<span class="chip" title="${fmt(t.count)} calls">${esc(t.name)} · ${fmt(t.count)}</span>`).join(" ") || emptyBox("no data yet");
+}
+window.setRepoFilter = (name) => { $("#f-repo").value = name; ST.offset = 0; };
+
+// ---------- sessions ----------
+const ST = { offset: 0, limit: 50, dir: "desc" };
+function fillFilterOptions() {
+  const repoSel = $("#f-repo"), modelSel = $("#f-model");
+  const rv = repoSel.value, mv = modelSel.value;
+  repoSel.innerHTML = '<option value="">All repos</option>' +
+    OV.repos.map(r => `<option value="${esc(r.name)}">${esc(r.name)} (${r.sessions})</option>`).join("");
+  modelSel.innerHTML = '<option value="">All models</option>' +
+    OV.models.map(m => `<option value="${esc(m.name)}">${esc(m.name)}</option>`).join("");
+  repoSel.value = rv; modelSel.value = mv;
+}
+async function loadSessions() {
+  await loadOverview();
+  const p = new URLSearchParams({
+    q: $("#f-q").value, repo: $("#f-repo").value, model: $("#f-model").value,
+    from: $("#f-from").value, to: $("#f-to").value,
+    sort: $("#f-sort").value, dir: ST.dir,
+    limit: ST.limit, offset: ST.offset,
+  });
+  const data = await api("/api/sessions?" + p);
+  const rows = data.items.map(s => `
+    <tr class="click" onclick="openSession('${s.id}')">
+      <td style="max-width:340px">
+        ${s.active ? '<span class="badge-active" title="active now"></span>' : ""}<b>${esc(s.name)}</b>
+        <div class="soft small" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+          ${esc(s.repo)}${s.branch ? " · " + esc(s.branch) : ""}${s.client ? " · " + esc(s.client) : ""}
+        </div>
+      </td>
+      <td title="${full(s.updated_at)}" class="small">${rel(s.updated_at)}<div class="soft">${fmtDur(s.wall_ms)} span</div></td>
+      <td class="num">${fmt(s.user_turns)}</td>
+      <td class="num">${fmt(s.tool_calls)}</td>
+      <td style="max-width:200px">${s.models.slice(0,3).map(m => `<span class="chip model">${esc(m)}</span>`).join("")}${s.models.length > 3 ? `<span class="chip">+${s.models.length-3}</span>` : ""}</td>
+      <td class="num" title="input ${fmt(s.input)} · cache ${fmt(s.cache_read)} · output ${fmt(s.output)}">${s.has_usage ? fmt(s.total_tokens) : '<span class="soft">—</span>'}</td>
+      <td class="num">${s.has_usage ? fmtAiu(s.aiu) : '<span class="soft">—</span>'}</td>
+      <td class="num">${s.has_usage ? fmt(Math.round(s.premium)) : '<span class="soft">—</span>'}</td>
+      <td class="num small">${s.has_usage ? `<span class="pos">+${fmt(s.lines_added)}</span> <span class="neg">−${fmt(s.lines_removed)}</span>` : '<span class="soft">—</span>'}</td>
+      <td class="num">${s.files || '<span class="soft">—</span>'}</td>
+    </tr>`).join("");
+  $("#sessionstable").innerHTML =
+    `<tr><th>Session</th><th>Active</th><th class="num">Turns</th><th class="num">Tools</th><th>Models</th><th class="num">Tokens</th><th class="num">AIU</th><th class="num">Prem.</th><th class="num">Δ lines</th><th class="num">Files</th></tr>` +
+    (rows || `<tr><td colspan="10">${emptyBox("no sessions match your filters")}</td></tr>`);
+  $("#pageinfo").textContent = data.total ? `${ST.offset + 1}–${Math.min(ST.offset + ST.limit, data.total)} of ${data.total}` : "0 results";
+  $("#prevpage").disabled = ST.offset === 0;
+  $("#nextpage").disabled = ST.offset + ST.limit >= data.total;
+}
+
+// ---------- search ----------
+let ROLE = "";
+async function runSearch() {
+  const q = $("#s-q").value.trim();
+  const box = $("#searchresults"), meta = $("#searchmeta");
+  if (q.length < 2) { box.innerHTML = ""; meta.textContent = "type at least 2 characters — the last word matches by prefix"; return; }
+  const p = new URLSearchParams({ q, limit: 100 });
+  if (ROLE !== "") p.set("role", ROLE);
+  const t0 = performance.now();
+  const data = await api("/api/search?" + p);
+  meta.textContent = `${data.total} hits in ${(performance.now() - t0).toFixed(0)} ms`;
+  box.innerHTML = data.hits.map(h => `
+    <div class="hit" onclick="openSession('${h.session_id}', ${h.turn})">
+      <div class="top">
+        <span class="rolebadge r${h.role}">${roleName(h.role)}</span>
+        <span class="name">${esc(h.session_name)}</span>
+        <span class="soft small">${esc(h.repo)}</span>
+        ${h.model ? `<span class="chip model">${esc(h.model)}</span>` : ""}
+        <span class="soft small" style="margin-left:auto" title="${full(h.ts)}">${rel(h.ts)}</span>
+      </div>
+      <div class="snippet">${highlight(h.snippet, data.tokens)}</div>
+    </div>`).join("") || emptyBox("nothing found — try fewer or shorter words");
+}
+
+// ---------- repos ----------
+async function renderRepos() {
+  const data = await api("/api/repos");
+  $("#repogrid").innerHTML = data.repos.map(r => {
+    const initial = (r.name.split("/").pop() || "?").replace(/^dir:/, "").charAt(0).toUpperCase();
+    return `
+    <div class="repocard">
+      <div class="head">
+        <span class="avatar">${esc(initial)}</span>
+        <span class="t">
+          <div class="n" title="${esc(r.cwds.join('\n'))}">${esc(r.name)}</div>
+          <div class="w">last active ${rel(r.last)}</div>
+        </span>
+      </div>
+      <div>${r.branches.slice(0,4).map(b => `<span class="chip">${esc(b)}</span>`).join("")}</div>
+      <div class="stats">
+        <div><div class="k">Sessions</div><div class="v">${fmt(r.sessions)}</div></div>
+        <div><div class="k">AIU</div><div class="v">${fmtAiu(r.aiu)}</div></div>
+        <div><div class="k">Premium</div><div class="v">${fmt(Math.round(r.premium))}</div></div>
+        <div><div class="k">Tokens</div><div class="v">${fmt(r.input + r.output + r.cache_read)}</div></div>
+        <div><div class="k">Prompts</div><div class="v">${fmt(r.user_turns)}</div></div>
+        <div><div class="k">Δ lines</div><div class="v"><span class="pos">+${fmt(r.lines_added)}</span> <span class="neg">−${fmt(r.lines_removed)}</span></div></div>
+      </div>
+      <div class="top">${r.top_sessions.map(s => `<a href="javascript:void(0)" onclick="openSession('${s.id}')" title="${esc(s.name)}">▸ ${esc(s.name)} <span class="soft">(${fmtAiu(s.aiu)} AIU)</span></a>`).join("")}</div>
+      <div style="margin-top:8px"><a href="#/sessions" onclick="setRepoFilter('${esc(r.name)}')" class="small">view all sessions →</a></div>
+    </div>`;
+  }).join("");
+}
+
+// ---------- drawer ----------
+window.openSession = async (id, turnIdx) => {
+  $("#overlay").style.display = "block";
+  $("#drawer").classList.add("open");
+  $("#d-title").textContent = "loading…";
+  $("#d-body").innerHTML = "";
+  let s;
+  try { s = await api("/api/session/" + id); }
+  catch { $("#d-title").textContent = "session not found"; return; }
+  $("#d-title").innerHTML = (s.active ? '<span class="badge-active"></span>' : "") + esc(s.name);
+  $("#d-copy").onclick = () => navigator.clipboard.writeText(s.id);
+  const mi = (k, v) => v ? `<div class="mi"><div class="k">${k}</div><div class="v">${v}</div></div>` : "";
+  const turns = (s.turns || []).map((t, i) => {
+    const cls = t.role === 0 ? "u" : t.role === 2 ? "s2" : "";
+    const long = t.text.length > 700;
+    return `<div class="turn ${cls}" id="turn-${i}">
+      <div class="thead">
+        <span class="rolebadge r${t.role}">${roleName(t.role)}</span>
+        ${t.model ? `<span class="chip model">${esc(t.model)}</span>` : ""}
+        ${(t.tools || []).slice(0,6).map(x => `<span class="chip">${esc(x)}</span>`).join("")}
+        <span title="${full(t.ts)}">${rel(t.ts)}</span>
+      </div>
+      <pre>${esc(t.text)}</pre>
+      ${long || t.truncated ? `<span class="more" onclick="this.parentElement.classList.toggle('expanded');this.textContent=this.parentElement.classList.contains('expanded')?'show less':'show more'">show more</span>` : ""}
+    </div>`;
+  }).join("");
+  const modelRows = (s.models_detail || []).map(m => `<tr>
+      <td><span class="chip model">${esc(m.name)}</span></td>
+      <td class="num">${fmt(m.requests)}</td><td class="num">${fmt(Math.round(m.premium))}</td>
+      <td class="num">${fmt(m.input)}</td><td class="num">${fmt(m.cache_read)}</td>
+      <td class="num">${fmt(m.output)}</td><td class="num">${fmt(m.reasoning)}</td>
+      <td class="num"><b>${fmtAiu(m.aiu)}</b></td></tr>`).join("");
+  const segRows = (s.segments_detail || []).map(g => `<tr>
+      <td class="small" title="${full(g.ts)}">${full(g.ts)}</td><td>${esc(g.shutdown_type)}</td>
+      <td class="num">${fmt(Math.round(g.premium))}</td><td class="num">${fmtAiu(g.aiu)}</td>
+      <td class="num">${fmt(g.input)}</td><td class="num">${fmt(g.output)}</td>
+      <td class="num">${fmt(g.cache_read)}</td><td class="num">${fmtDur(g.api_ms)}</td></tr>`).join("");
+  $("#d-body").innerHTML = `
+    <div class="metagrid">
+      ${mi("Session id", `<span class="mono">${esc(s.id)}</span>`)}
+      ${mi("Repo", esc(s.repository || s.repo))} ${mi("Branch", esc(s.branch))}
+      ${mi("Working dir", `<span class="mono">${esc(s.cwd)}</span>`)}
+      ${mi("Client", esc(s.client))} ${mi("CLI version", esc(s.copilot_version))}
+      ${mi("Created", full(s.created_at))} ${mi("Last active", full(s.updated_at))}
+      ${mi("Wall span", fmtDur(s.wall_ms))} ${mi("Model API time", fmtDur(s.api_ms))}
+      ${mi("Run segments", s.segments)} ${mi("Compactions", s.compactions)}
+      ${mi("Subagents", s.subagents)} ${s.errors ? mi("Errors", `<span class="neg">${s.errors}</span>`) : ""}
+      ${mi("Events log", fmt(s.events_bytes) + "B")}
+    </div>
+    <div class="cards" style="margin-top:12px">
+      ${statCard("Input", fmt(s.input), "", ICONS.input)} ${statCard("Cache read", fmt(s.cache_read), "", ICONS.cache)}
+      ${statCard("Output", fmt(s.output), "", ICONS.output)} ${statCard("Premium", fmt(Math.round(s.premium)), "", ICONS.premium)}
+      ${statCard("AIU", fmtAiu(s.aiu), "", ICONS.aiu)}
+      ${statCard("Code", `<span class="pos">+${fmt(s.lines_added)}</span> <span class="neg">−${fmt(s.lines_removed)}</span>`, "", ICONS.code)}
+    </div>
+    ${modelRows ? `<div class="panel"><h3>Per-model usage</h3><div style="overflow-x:auto"><table class="data">
+      <tr><th>Model</th><th class="num">Req</th><th class="num">Prem</th><th class="num">Input</th><th class="num">Cache</th><th class="num">Output</th><th class="num">Reason</th><th class="num">AIU</th></tr>${modelRows}</table></div></div>` : ""}
+    ${(s.files_list || []).length ? `<div class="panel"><details class="files"><summary>${s.files_list.length} files modified</summary>
+      <ul>${s.files_list.map(f => `<li>${esc(f)}</li>`).join("")}</ul></details></div>` : ""}
+    ${Object.keys(s.tool_counts || {}).length ? `<div class="panel"><h3>Tools</h3>${
+      Object.entries(s.tool_counts).sort((a,b) => b[1]-a[1]).map(([k,v]) => `<span class="chip">${esc(k)} · ${fmt(v)}</span>`).join(" ")}</div>` : ""}
+    ${(s.summaries || []).length ? `<div class="panel"><h3>Task summaries</h3>${
+      s.summaries.map(x => `<div class="summaryblock"><pre>${esc(x)}</pre></div>`).join("")}</div>` : ""}
+    ${segRows ? `<div class="panel"><h3>Run segments</h3><div style="overflow-x:auto"><table class="data">
+      <tr><th>Shutdown at</th><th>Type</th><th class="num">Prem</th><th class="num">AIU</th><th class="num">Input</th><th class="num">Output</th><th class="num">Cache</th><th class="num">API time</th></tr>${segRows}</table></div></div>` : ""}
+    <div class="panel"><h3>Conversation <span class="right small soft">${(s.turns || []).length} messages</span></h3>${turns || emptyBox("no messages captured")}</div>`;
+  if (turnIdx != null && turnIdx >= 0) {
+    const el = $("#turn-" + turnIdx);
+    if (el) { el.scrollIntoView({ block: "center" }); el.classList.add("flash"); }
+  } else {
+    $("#d-body").scrollTop = 0;
+  }
+};
+function closeDrawer() {
+  $("#drawer").classList.remove("open");
+  $("#about").classList.remove("open");
+  $("#overlay").style.display = "none";
+}
+$("#d-close").onclick = closeDrawer;
+$("#overlay").onclick = closeDrawer;
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeDrawer(); });
+const openAbout = () => { $("#overlay").style.display = "block"; $("#about").classList.add("open"); };
+$("#aboutbtn").onclick = openAbout;
+$("#footabout").onclick = openAbout;
+$("#a-close").onclick = closeDrawer;
+$("#about").onclick = e => { if (e.target.id === "about") closeDrawer(); };
+
+// ---------- wiring ----------
+$("#dailymetric").onchange = renderDaily;
+window.addEventListener("resize", debounce(renderDaily, 200));
+const reload = () => { ST.offset = 0; loadSessions(); };
+$("#f-q").oninput = debounce(reload, 250);
+["#f-repo","#f-model","#f-from","#f-to","#f-sort"].forEach(s => $(s).onchange = reload);
+$("#f-dir").onclick = () => { ST.dir = ST.dir === "desc" ? "asc" : "desc"; $("#f-dir").textContent = ST.dir === "desc" ? "↓" : "↑"; reload(); };
+$("#prevpage").onclick = () => { ST.offset = Math.max(0, ST.offset - ST.limit); loadSessions(); };
+$("#nextpage").onclick = () => { ST.offset += ST.limit; loadSessions(); };
+$("#s-q").oninput = debounce(runSearch, 250);
+$$("#rolechips button").forEach(b => b.onclick = () => {
+  $$("#rolechips button").forEach(x => x.classList.remove("on"));
+  b.classList.add("on"); ROLE = b.dataset.role; runSearch();
+});
+$("#rescan").onclick = async () => {
+  const btn = $("#rescan");
+  btn.disabled = true;
+  try { await fetch("/api/rescan"); OV = null; await loadOverview(true); route(); }
+  finally { btn.disabled = false; }
+};
+$("#themetoggle").onclick = () => {
+  const cur = document.documentElement.getAttribute("data-theme");
+  document.documentElement.setAttribute("data-theme", cur === "dark" ? "light" : "dark");
+  renderDaily();
+};
+loadOverview().then(route).catch(e => {
+  document.body.insertAdjacentHTML("beforeend", `<div class="empty">failed to load: ${esc(e.message)}</div>`);
+});
+</script>
+</body>
+</html>
