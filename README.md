@@ -1,6 +1,10 @@
 # Copilot Historian
 
-<img src="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23b11f4b' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round' width='48'%3E%3Cpath d='M3.5 12a8.5 8.5 0 1 0 2.2-5.7'/%3E%3Cpath d='M3.5 4v4.5H8'/%3E%3Cpath d='M12 7.5V12l3.2 2'/%3E%3C/svg%3E" width="48" align="right">
+<img src="assets/logo.svg" width="64" align="right" alt="Copilot Historian logo">
+
+[![CI](https://github.com/datumnova/copilot-historian/actions/workflows/ci.yml/badge.svg)](https://github.com/datumnova/copilot-historian/actions/workflows/ci.yml)
+[![Release](https://github.com/datumnova/copilot-historian/actions/workflows/release.yml/badge.svg)](https://github.com/datumnova/copilot-historian/actions/workflows/release.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-b11f4b.svg)](LICENSE)
 
 A self-contained dashboard for exploring your **GitHub Copilot CLI session history** —
 full-text search, token & AIU consumption, premium requests, models, repos, summaries,
@@ -10,7 +14,19 @@ Single static binary. No runtime dependencies, no database, no network calls.
 It reads your local `~/.copilot/session-state` directory (read-only) and serves an
 embedded web UI on localhost.
 
+## Demo
+
+[![Copilot Historian demo](assets/demo.gif)](https://github.com/datumnova/copilot-historian/raw/main/assets/demo.mp4)
+
+<sub>Animated preview — click it for the full-resolution MP4.</sub>
+
 ## Quick start
+
+**Download a prebuilt binary** from the [Releases page](https://github.com/datumnova/copilot-historian/releases) —
+available for Windows (x64 / ARM64), Linux (x64 / ARM64, fully static musl) and
+macOS (Intel / Apple Silicon). Unpack and run; there is nothing to install.
+
+Or build from source:
 
 ```
 cargo build --release
@@ -26,8 +42,9 @@ USAGE: copilot-historian [--dir <session-state dir>] [--port <port>] [--no-open]
 ```
 
 The binary is fully portable: copy it to any machine (same OS/arch) and point it at a
-session-state directory with `--dir`. Cross-compile with the usual
-`cargo build --release --target <triple>` for other platforms.
+session-state directory with `--dir`. Every push to `main` is built on Linux, Windows
+and macOS by CI; tagging `v*` publishes release binaries for all six platform targets
+automatically.
 
 ## What you get
 

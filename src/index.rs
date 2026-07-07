@@ -142,12 +142,7 @@ fn intersect(a: &[u32], b: &[u32]) -> Vec<u32> {
 }
 
 pub fn meta_text(s: &Session) -> String {
-    let mut parts: Vec<String> = vec![
-        s.name.clone(),
-        s.id.clone(),
-        s.cwd.clone(),
-        s.repo_label(),
-    ];
+    let mut parts: Vec<String> = vec![s.name.clone(), s.id.clone(), s.cwd.clone(), s.repo_label()];
     if let Some(v) = &s.repository {
         parts.push(v.clone());
     }

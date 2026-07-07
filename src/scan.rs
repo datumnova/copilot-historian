@@ -1,4 +1,4 @@
-use crate::model::{ModelUsage, Segment, Session, Turn};
+use crate::model::{Segment, Session, Turn};
 use crate::util::iso_to_epoch_ms;
 use rayon::prelude::*;
 use serde_json::Value;
@@ -284,7 +284,7 @@ fn apply_shutdown(s: &mut Session, d: &Value, ts: String) {
     if let Some(mm) = d["modelMetrics"].as_object() {
         for (name, m) in mm {
             s.models_seen.insert(name.clone());
-            let entry = s.models.entry(name.clone()).or_insert_with(ModelUsage::default);
+            let entry = s.models.entry(name.clone()).or_default();
             entry.requests += m["requests"]["count"].as_u64().unwrap_or(0);
             entry.premium_cost += m["requests"]["cost"].as_f64().unwrap_or(0.0);
             let u = &m["usage"];

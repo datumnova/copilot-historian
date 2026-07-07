@@ -467,7 +467,7 @@ pub fn search(st: &AppState, q: &HashMap<String, String>) -> Value {
     json!({"total": total, "hits": hits, "tokens": toks})
 }
 
-fn doc_ts<'a>(st: &'a AppState, doc: u32) -> &'a str {
+fn doc_ts(st: &AppState, doc: u32) -> &str {
     let dr = st.index.docs[doc as usize];
     let s = &st.sessions[dr.session as usize];
     if dr.turn < 0 {

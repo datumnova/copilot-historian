@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Rust version
+        run: rustup show active-toolchain && cargo --version
+
+      - name: rustfmt
+        if: matrix.os == 'ubuntu-latest'
+        run: cargo fmt --check
+
+      - name: clippy
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          rustup component add clippy
+          cargo clippy --all-targets -- -D warnings
+
+      - name: Build (release)
+        run: cargo build --release --locked
+
+      - name: Smoke test
+        shell: bash
+        run: |
+          ./target/release/copilot-historian --version
+          ./target/release/copilot-historian --help

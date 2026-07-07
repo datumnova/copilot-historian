@@ -5,7 +5,7 @@ mod scan;
 mod util;
 
 use api::AppState;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
 use tiny_http::{Header, Response, Server};
 
@@ -18,7 +18,7 @@ fn default_root() -> PathBuf {
     PathBuf::from(home).join(".copilot").join("session-state")
 }
 
-fn build_state(root: &PathBuf) -> AppState {
+fn build_state(root: &Path) -> AppState {
     let t0 = std::time::Instant::now();
     let sessions = scan::scan_root(root);
     let index = index::SearchIndex::build(&sessions);
@@ -131,11 +131,17 @@ fn open_url(url: &str) -> std::io::Result<()> {
     }
     #[cfg(target_os = "macos")]
     {
-        std::process::Command::new("open").arg(url).spawn().map(|_| ())
+        std::process::Command::new("open")
+            .arg(url)
+            .spawn()
+            .map(|_| ())
     }
     #[cfg(all(not(target_os = "windows"), not(target_os = "macos")))]
     {
-        std::process::Command::new("xdg-open").arg(url).spawn().map(|_| ())
+        std::process::Command::new("xdg-open")
+            .arg(url)
+            .spawn()
+            .map(|_| ())
     }
 }
 
@@ -148,8 +154,11 @@ fn handle(rq: tiny_http::Request, st: Arc<AppState>, shared: &Arc<RwLock<Arc<App
         let resp = Response::from_string(body)
             .with_status_code(status)
             .with_header(
-                Header::from_bytes(&b"Content-Type"[..], &b"application/json; charset=utf-8"[..])
-                    .unwrap(),
+                Header::from_bytes(
+                    &b"Content-Type"[..],
+                    &b"application/json; charset=utf-8"[..],
+                )
+                .unwrap(),
             )
             .with_header(Header::from_bytes(&b"Cache-Control"[..], &b"no-store"[..]).unwrap());
         let _ = rq.respond(resp);
