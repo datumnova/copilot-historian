@@ -1,6 +1,10 @@
+<p align="center">
+  <img src="assets/logo.svg" width="64" alt="Copilot Historian logo">
+</p>
+
+
 # Copilot Historian
 
-<img src="assets/logo.svg" width="64" align="right" alt="Copilot Historian logo">
 
 [![CI](https://github.com/datumnova/copilot-historian/actions/workflows/ci.yml/badge.svg)](https://github.com/datumnova/copilot-historian/actions/workflows/ci.yml)
 [![Release](https://github.com/datumnova/copilot-historian/actions/workflows/release.yml/badge.svg)](https://github.com/datumnova/copilot-historian/actions/workflows/release.yml)
@@ -48,13 +52,13 @@ automatically.
 
 ## What you get
 
-| View | Contents |
-|---|---|
-| **Overview** | Totals (sessions, prompts, tool calls, input/output/cache tokens, premium requests, AIU, lines of code changed, model API time), daily activity chart, per-model usage table, top repos, tool usage |
-| **Sessions** | Filterable/sortable table (full-text, repo, model, date range) with per-session tokens, AIU, premium, code delta |
-| **Search** | Indexed full-text search across your prompts, assistant replies, task summaries, and metadata (file paths, repos, model names). Last word matches by prefix; results show highlighted snippets and jump into the conversation |
-| **Repos** | Per repo/directory aggregation: sessions, AIU, premium, tokens, prompts, code delta, branches, top sessions |
-| **Session drawer** | Full metadata (repo, branch, cwd, client, CLI version, wall span, API time), usage cards, per-model table, run segments, files modified, tools used, task summaries, and the whole conversation |
+| View                     | Contents                                                                                                                                                                                                                      |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Overview**       | Totals (sessions, prompts, tool calls, input/output/cache tokens, premium requests, AIU, lines of code changed, model API time), daily activity chart, per-model usage table, top repos, tool usage                           |
+| **Sessions**       | Filterable/sortable table (full-text, repo, model, date range) with per-session tokens, AIU, premium, code delta                                                                                                              |
+| **Search**         | Indexed full-text search across your prompts, assistant replies, task summaries, and metadata (file paths, repos, model names). Last word matches by prefix; results show highlighted snippets and jump into the conversation |
+| **Repos**          | Per repo/directory aggregation: sessions, AIU, premium, tokens, prompts, code delta, branches, top sessions                                                                                                                   |
+| **Session drawer** | Full metadata (repo, branch, cwd, client, CLI version, wall span, API time), usage cards, per-model table, run segments, files modified, tools used, task summaries, and the whole conversation                               |
 
 ## How it works
 
